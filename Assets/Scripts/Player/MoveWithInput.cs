@@ -153,12 +153,12 @@ public class MoveWithInput : MonoBehaviour
       yield return new WaitForEndOfFrame();
     }
 
+    //着地まで一定速度で下降
+    while(!IsGround)
+      yield return new WaitForEndOfFrame();
+
     //ジャンプアニメーション終了処理
     anim.SetTrigger("JumpEnd");
-
-    //しばらく一定速度で下降
-    if(!IsGround)
-      yield return new WaitForSeconds(jumpTimeUpDown);
 
     Rigidbody.useGravity = true;
     isJumpping = false;
