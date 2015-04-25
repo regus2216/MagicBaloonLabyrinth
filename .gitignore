@@ -234,3 +234,6 @@ sysinfo.txt #Unity3D Generated File On Crash Reports
 
 
 !Assets/Scripts
+/Assets/Animation/Player
+/Assets/FBX/RingLift
+/Assets/PhysicsMaterials

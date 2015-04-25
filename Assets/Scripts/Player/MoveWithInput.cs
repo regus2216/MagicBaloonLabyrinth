@@ -16,6 +16,10 @@ public class MoveWithInput : MonoBehaviour
   private bool allowZAxis = true;
   [SerializeField, Tooltip("入力キーに応じてスプライトを反転させるのに使用")]
   private GameObject playerSprite;
+  [SerializeField, Tooltip("スプライトのアニメーションをコントロールするアニメーター")]
+  private Animator anim;
+  [SerializeField, Tooltip("接地判定オブジェクト")]
+  private Transform groundCheck;
   [SerializeField, Range(0, 100)]
   private float jumpSpeed = 10f;
   [SerializeField, Range(0, 2), Tooltip("上昇時と下降時に速度を一定とする時間(頂点期は含まれない)")]
@@ -23,7 +27,10 @@ public class MoveWithInput : MonoBehaviour
   [SerializeField, Range(0, 10), Tooltip("ジャンプ時に頂点で序々落としていく速度の大きさ")]
   private float jumpTopSlowly = 1f;
 
+  //ジャンプしているかどうか
   private bool isJumpping = false;
+  private int verticalInput;
+  private int horizontalInput;
 
   private Rigidbody rig_cache;
   private Rigidbody Rigidbody
@@ -36,50 +43,70 @@ public class MoveWithInput : MonoBehaviour
     }
   }
 
-  public void Update()
+  private bool IsGround
   {
-    //移動
-    if(allowZAxis)
-      transform.Translate(moveSpeed * Vector3.forward * Input.GetAxisRaw("Vertical") * Time.deltaTime);
-    transform.Translate(moveSpeed * Vector3.right * Input.GetAxisRaw("Horizontal") * Time.deltaTime);
-
-    //反転処理
-    InverseSprite();
-
-    //ジャンプ処理
-    if(Input.GetButtonDown("Jump"))
+    get
     {
-      StartCoroutine_Auto(Jump());
-    }
+      var colls = Physics.OverlapSphere(groundCheck.position, 0.1f);
 
-    //回転
-    if(Input.GetButtonDown("LeftRotate"))
-      transform.Rotate(new Vector3(0, 90, 0));
-    if(Input.GetButtonDown("RightRotate"))
-      transform.Rotate(new Vector3(0, -90, 0));
+      //CanRideタグが付いているもののみ乗れる
+      if(colls.Any(col => col.tag == "CanRide"))
+        return true;
+      else
+        return false;
+    }
   }
 
-  /// <summary>
-  /// 入力からスプライトの方向を決定し、反転する
-  /// </summary>
-  private void InverseSprite()
+  public void Update()
   {
+    Move();
+
+    Jump();
+
+    Rotate();
+  }
+
+  private void Move()
+  {
+    //移動
+    verticalInput = (int)Input.GetAxisRaw("Vertical");
+    horizontalInput = (int)Input.GetAxisRaw("Horizontal");
+    if(allowZAxis)
+      transform.Translate(moveSpeed * Vector3.forward * verticalInput * Time.deltaTime);
+    transform.Translate(moveSpeed * Vector3.right * horizontalInput * Time.deltaTime);
+
+    //アニメーション処理
+    if(!isJumpping && ((int)verticalInput != 0 || (int)horizontalInput != 0))
+      anim.SetBool("WalkInput", true);
+    else
+      anim.SetBool("WalkInput", false);
+
+    //反転処理
     var scale = transform.localScale;
-    if(scale.x > 0 && Input.GetAxis("Horizontal") > 0)
+    if(scale.x > 0 && horizontalInput > 0)
       scale.x = -1;
-    if(scale.x < 0 && Input.GetAxis("Horizontal") < 0)
+    if(scale.x < 0 && horizontalInput < 0)
       scale.x = 1;
     transform.localScale = scale;
   }
 
-  private IEnumerator Jump()
+  private void Jump()
+  {
+    //ジャンプ処理
+    if(Input.GetButtonDown("Jump"))
+      StartCoroutine_Auto(JumpCoroutine());
+  }
+
+  private IEnumerator JumpCoroutine()
   {
     if(isJumpping)
       yield break;
 
     isJumpping = true;
-
     Rigidbody.useGravity = false;
+
+    //ジャンプアニメーション開始
+    anim.SetTrigger("JumpInput");
 
     //上がる処理
     Rigidbody.velocity = new Vector2(0, jumpSpeed);
@@ -90,19 +117,38 @@ public class MoveWithInput : MonoBehaviour
     //速度を下げる処理
     while(Rigidbody.velocity.y > -jumpSpeed)
     {
+      if(IsGround)
+        break;
+
       Rigidbody.velocity -= Vector3.up * jumpTopSlowly;
       yield return new WaitForEndOfFrame();
     }
 
+    //ジャンプアニメーション終了処理
+    anim.SetTrigger("JumpEnd");
+
     //しばらく一定速度で下降
-    yield return new WaitForSeconds(jumpTimeUpDown);
+    if(!IsGround)
+      yield return new WaitForSeconds(jumpTimeUpDown);
 
     Rigidbody.useGravity = true;
     isJumpping = false;
   }
 
+  private void Rotate()
+  {
+    //回転
+    if(Input.GetButtonDown("LeftRotate"))
+      transform.Rotate(new Vector3(0, 90, 0));
+    if(Input.GetButtonDown("RightRotate"))
+      transform.Rotate(new Vector3(0, -90, 0));
+  }
+
   public void OnGUI()
   {
-    GUILayout.Label(Rigidbody.velocity.ToString());
+    GUILayout.Label("H:" + horizontalInput);
+    GUILayout.Label("V:" + verticalInput);
+    GUILayout.Label("IsGround:" + IsGround);
+    GUILayout.Label("GroundCheckPos:" + groundCheck.position);
   }
 }
