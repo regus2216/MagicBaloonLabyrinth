@@ -10,16 +10,18 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class MoveWithInput : MonoBehaviour
 {
-  [SerializeField]
+  [SerializeField, Range(1, 10)]
   private float moveSpeed = 1f;
+  [SerializeField, Range(0, 1), Tooltip("しゃがみ移動時のmoveSpeedの係数")]
+  private float squatSpeedRate = 0.5f;
   [SerializeField, Tooltip("上下キーでのZ軸方向移動を許可するかどうか")]
   private bool allowZAxis = true;
-  [SerializeField, Tooltip("入力キーに応じてスプライトを反転させるのに使用")]
-  private GameObject playerSprite;
   [SerializeField, Tooltip("スプライトのアニメーションをコントロールするアニメーター")]
-  private Animator anim;
-  [SerializeField, Tooltip("接地判定オブジェクト")]
-  private Transform groundCheck;
+  private Animator anim = default(Animator);
+  [SerializeField, Tooltip("土埃アニメーションを管理するアニメーター")]
+  private Animator dust_anim = default(Animator);
+  [Tooltip("接地判定オブジェクト")]
+  public Transform[] groundCheckPositions;
   [SerializeField, Range(0, 100)]
   private float jumpSpeed = 10f;
   [SerializeField, Range(0, 2), Tooltip("上昇時と下降時に速度を一定とする時間(頂点期は含まれない)")]
@@ -29,8 +31,10 @@ public class MoveWithInput : MonoBehaviour
 
   //ジャンプしているかどうか
   private bool isJumpping = false;
+
   private int verticalInput;
   private int horizontalInput;
+  private bool squatInput;
 
   private Rigidbody rig_cache;
   private Rigidbody Rigidbody
@@ -47,13 +51,16 @@ public class MoveWithInput : MonoBehaviour
   {
     get
     {
-      var colls = Physics.OverlapSphere(groundCheck.position, 0.1f);
+      //接地判定オブジェクト周辺のコライダーの取得
+      List<Collider[]> collsList = new List<Collider[]>();
+      foreach(var pos in groundCheckPositions)
+        collsList.Add(Physics.OverlapSphere(pos.position, 0.01f));
 
-      //CanRideタグが付いているもののみ乗れる
-      if(colls.Any(col => col.tag == "CanRide"))
-        return true;
-      else
-        return false;
+      //タグがPlayer(自身)以外のコライダーにマッチした場合は接地しているとする
+      foreach(var colls in collsList)
+        if(colls.Any(coll => coll.tag != "Player"))
+          return true;
+      return false;
     }
   }
 
@@ -68,18 +75,43 @@ public class MoveWithInput : MonoBehaviour
 
   private void Move()
   {
-    //移動
+    //しゃがみ状態の検出
+    if(!isJumpping)
+      squatInput = Input.GetButton("Squat");
+
+    //移動状態の検出
     verticalInput = (int)Input.GetAxisRaw("Vertical");
     horizontalInput = (int)Input.GetAxisRaw("Horizontal");
-    if(allowZAxis)
-      transform.Translate(moveSpeed * Vector3.forward * verticalInput * Time.deltaTime);
-    transform.Translate(moveSpeed * Vector3.right * horizontalInput * Time.deltaTime);
+
+    //普通の移動
+    if(!squatInput)
+    {
+      if(allowZAxis)
+        transform.Translate(moveSpeed * Vector3.forward * verticalInput * Time.deltaTime);
+      transform.Translate(moveSpeed * Vector3.right * horizontalInput * Time.deltaTime);
+    }
+
+    //しゃがみ移動
+    else
+    {
+      if(allowZAxis)
+        transform.Translate(moveSpeed * squatSpeedRate * Vector3.forward * verticalInput * Time.deltaTime);
+      transform.Translate(moveSpeed * squatSpeedRate * Vector3.right * horizontalInput * Time.deltaTime);
+    }
 
     //アニメーション処理
-    if(!isJumpping && ((int)verticalInput != 0 || (int)horizontalInput != 0))
+    if(!isJumpping && (verticalInput != 0 || horizontalInput != 0))
       anim.SetBool("WalkInput", true);
     else
       anim.SetBool("WalkInput", false);
+    if(squatInput)
+      anim.SetBool("SquatInput", true);
+    else
+      anim.SetBool("SquatInput", false);
+    if((verticalInput != 0 || horizontalInput != 0) && !squatInput && !isJumpping)
+      dust_anim.SetBool("Dust", true);
+    else
+      dust_anim.SetBool("Dust", false);
 
     //反転処理
     var scale = transform.localScale;
@@ -93,15 +125,12 @@ public class MoveWithInput : MonoBehaviour
   private void Jump()
   {
     //ジャンプ処理
-    if(Input.GetButtonDown("Jump"))
+    if(Input.GetButtonDown("Jump") && !isJumpping && IsGround)
       StartCoroutine_Auto(JumpCoroutine());
   }
 
   private IEnumerator JumpCoroutine()
   {
-    if(isJumpping)
-      yield break;
-
     isJumpping = true;
     Rigidbody.useGravity = false;
 
@@ -149,6 +178,5 @@ public class MoveWithInput : MonoBehaviour
     GUILayout.Label("H:" + horizontalInput);
     GUILayout.Label("V:" + verticalInput);
     GUILayout.Label("IsGround:" + IsGround);
-    GUILayout.Label("GroundCheckPos:" + groundCheck.position);
   }
 }
