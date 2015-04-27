@@ -86,7 +86,7 @@ namespace MBL.Charactor.Player
       {
         return
           CheckCollisions(groundCheckPositions,
-          colls => { return colls.Any(coll => coll.tag != "Player"); });
+          colls => colls.FirstOrDefault() != null);
       }
     }
 
@@ -99,7 +99,7 @@ namespace MBL.Charactor.Player
       {
         return
           CheckCollisions(headCheckPositions,
-          colls => { return colls.Any(coll => coll.tag != "Player"); });
+          colls => colls.FirstOrDefault() != null);
       }
     }
 
@@ -115,11 +115,11 @@ namespace MBL.Charactor.Player
         if(!squatInput)
           return
             !CheckCollisions(rotateCheckPositions,
-            colls => { return colls.Any(coll => coll.tag != "Player"); });
+            colls => colls.FirstOrDefault() != null);
         else
           return
             !CheckCollisions(squatRotateCheckPositions,
-            colls => { return colls.Any(coll => coll.tag != "Player"); });
+            colls => colls.FirstOrDefault() != null);
       }
     }
 
@@ -128,15 +128,18 @@ namespace MBL.Charactor.Player
     /// 自身以外のコライダーに接触している場合はtrueを返す
     /// </summary>
     /// <param name="predicate">取得したコライダーの配列に対して行う真偽値判定</param>
-    private bool CheckCollisions(Transform[] positions, Func<Collider[], bool> predicate)
+    private bool CheckCollisions(Transform[] positions, Func<IEnumerable<Collider>, bool> predicate)
     {
       List<Collider[]> collsList = new List<Collider[]>();
       foreach(var pos in positions)
-        collsList.Add(Physics.OverlapSphere(pos.position, 0.001f));
+        collsList.Add(Physics.OverlapSphere(pos.position, 0.01f));
 
       foreach(var colls in collsList)
-        if(predicate(colls))
+      {
+        var colls_player_delete = colls.Where(coll => coll.tag != "Player");
+        if(predicate(colls_player_delete))
           return true;
+      }
       return false;
     }
 
@@ -165,28 +168,27 @@ namespace MBL.Charactor.Player
       mover.x = horizontalInput;
       mover.z = verticalInput;
 
-      //普通の移動
-      if(!squatInput)
+      if(!isRotate)
       {
-        //transform.Translate(moveSpeed * Vector3.forward * verticalInput * Time.deltaTime);
-        //transform.Translate(moveSpeed * Vector3.right * horizontalInput * Time.deltaTime);
-        transform.Translate(moveSpeed * mover.normalized * Time.deltaTime);
+        //普通の移動
+        if(!squatInput)
+        {
+          transform.Translate(moveSpeed * mover.normalized * Time.deltaTime);
 
-        //コライダーの大きさ変更
-        Collider.center = normalColliderCenter;
-        Collider.size = normalColliderSize;
-      }
+          //コライダーの大きさ変更
+          Collider.center = normalColliderCenter;
+          Collider.size = normalColliderSize;
+        }
 
-      //しゃがみ移動
-      else
-      {
-        //transform.Translate(moveSpeed * squatSpeedRate * Vector3.forward * verticalInput * Time.deltaTime);
-        //transform.Translate(moveSpeed * squatSpeedRate * Vector3.right * horizontalInput * Time.deltaTime);
-        transform.Translate(moveSpeed * squatSpeedRate * mover.normalized * Time.deltaTime);
+        //しゃがみ移動
+        else
+        {
+          transform.Translate(moveSpeed * squatSpeedRate * mover.normalized * Time.deltaTime);
 
-        //コライダーの大きさ変更
-        Collider.center = squatColliderCenter;
-        Collider.size = squatColliderSize;
+          //コライダーの大きさ変更
+          Collider.center = squatColliderCenter;
+          Collider.size = squatColliderSize;
+        }
       }
 
       //アニメーション処理
@@ -271,7 +273,7 @@ namespace MBL.Charactor.Player
 
     private void Rotate()
     {
-      if(!isRotate && Rotateble)
+      if(Rotateble)
       {
         if(Input.GetButtonDown("LeftRotate"))
           StartCoroutine_Auto(RotateCoroutine(Vector3.up));
@@ -283,16 +285,22 @@ namespace MBL.Charactor.Player
     private IEnumerator RotateCoroutine(Vector3 eulerAngle)
     {
       isRotate = true;
-      for(int i = 0; i < 30; ++i)
+
+      //数値が小さいほど早く回転
+      const int LOOP_COUNT = 30;
+      for(int i = 0; i < LOOP_COUNT; ++i)
       {
-        transform.Rotate(eulerAngle * 90 / 30);
+        transform.Rotate(eulerAngle * 90 / LOOP_COUNT);
         yield return new WaitForEndOfFrame();
       }
+
       isRotate = false;
     }
 
     public void OnGUI()
     {
+      GUILayout.Label("Pos:" + transform.position);
+
       GUILayout.Label("H:" + horizontalInput);
       GUILayout.Label("V:" + verticalInput);
       GUILayout.Label("Verocity:" + Rigidbody.velocity);
