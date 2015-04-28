@@ -11,17 +11,28 @@ namespace MBL.Gimmick.Lift
   /// </summary>
   public class RotateRingLift : MonoBehaviour
   {
+    [SerializeField]
+    private bool rotate = true;
+    [SerializeField]
+    private float rotateSpeed = 0.3f;
+    [SerializeField]
+    private bool rotateInverse = false;
+
     public void Update()
     {
-      Rotate();
+      if(rotate)
+        Rotate();
     }
 
     /// <summary>
-    /// プレイヤーの位置からリングを回転する
+    /// リングを回転する
     /// </summary>
     private void Rotate()
     {
-      transform.Rotate(Vector3.up, 1);
+      if(!rotateInverse)
+        transform.Rotate(Vector3.up, rotateSpeed);
+      else
+        transform.Rotate(Vector3.up, -rotateSpeed);
     }
   }
 }

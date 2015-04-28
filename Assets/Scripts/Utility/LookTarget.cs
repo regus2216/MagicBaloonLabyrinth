@@ -11,22 +11,30 @@ namespace MBL.Utility
   /// </summary>
   public class LookTarget : MonoBehaviour
   {
-    [Tooltip("方向転換の際のターゲット")]
-    public GameObject target;
-    [Tooltip("縦軸方向の回転を有効にするか")]
+    [SerializeField, Tooltip("ターゲットの指定がない場合メインカメラに設定するか")]
+    private bool autoCam = true;
+    [SerializeField, Tooltip("方向転換の際のターゲット")]
+    private Transform target;
+    [SerializeField, Tooltip("縦軸方向の回転を有効にするか")]
     private bool enableVerticalRotation = false;
+
+    public void Start()
+    {
+      if(target == null && autoCam)
+        target = Camera.main.transform;
+    }
 
     public void Update()
     {
       if(enableVerticalRotation)
       {
-        this.transform.LookAt(this.target.transform.position);
+        this.transform.LookAt(target.position);
       }
       else
       {
-        Vector3 target = this.target.transform.position;
-        target.y = this.transform.position.y;
-        this.transform.LookAt(target);
+        Vector3 target_exceptY = this.target.position;
+        target_exceptY.y = this.transform.position.y;
+        this.transform.LookAt(target_exceptY);
       }
     }
   }
