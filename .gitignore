@@ -240,4 +240,6 @@ sysinfo.txt #Unity3D Generated File On Crash Reports
 /Assets/Animation/Effect
 /Assets/Materials/Test
 /Assets/Images
-/Assets
+/Assets/Prefabs
+/Assets/FBX/Tile
+/Assets/Animation
