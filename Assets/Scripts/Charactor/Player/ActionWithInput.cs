@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityStandardAssets.Cameras;
 
 namespace MBL.Charactor.Player
 {
@@ -57,6 +58,8 @@ namespace MBL.Charactor.Player
     private GameObject eventScript = null;
     [SerializeField, Tooltip("風船を接地する位置を決めるオブジェクト")]
     private Transform setBalloonPos = null;
+    [SerializeField, Tooltip("風船をギミックにセットする際に入力を禁止する時間")]
+    private float setBanTime = 0.5f;
 
     private Vector3 mover = new Vector3();
     private bool isJumpping = false;
@@ -108,25 +111,32 @@ namespace MBL.Charactor.Player
     /// <summary>
     /// 接地しているか
     /// </summary>
-    private bool IsGrounded
+    public bool IsGrounded
     {
       get
       {
         return
-          CheckCollisions(groundCheckPositions,
+
+          CheckCollisionsAny(groundCheckPositions,
           colls => colls.FirstOrDefault() != null);
       }
+    }
+
+    public bool IsJumpping
+    {
+      get { return isJumpping; }
     }
 
     /// <summary>
     /// 頭上にコライダーオブジェクトが存在するか
     /// </summary>
-    private bool ExistColliderOverhead
+    public bool ExistColliderOverhead
     {
       get
       {
         return
-          CheckCollisions(headCheckPositions,
+
+          CheckCollisionsAny(headCheckPositions,
           colls => colls.FirstOrDefault() != null);
       }
     }
@@ -134,7 +144,7 @@ namespace MBL.Charactor.Player
     /// <summary>
     /// 回転可能かどうか
     /// </summary>
-    private bool Rotateble
+    public bool Rotateble
     {
       get
       {
@@ -145,24 +155,33 @@ namespace MBL.Charactor.Player
 
             //!CheckCollisions(rotateCheckPositions,
             //colls => colls.FirstOrDefault(coll => !coll.isTrigger) != null);
-            !CheckCollisions(rotateCheckPositions,
-            colls => colls.Where(coll => !coll.isTrigger).Count() > rotateCheckPositions.Length / 2);
+            CheckCollisionCount(rotateCheckPositions) <= Math.Ceiling(rotateCheckPositions.Length / 2f);
         else
           return
 
             //!CheckCollisions(squatRotateCheckPositions,
             //colls => colls.FirstOrDefault(coll => !coll.isTrigger) != null);
-            !CheckCollisions(squatRotateCheckPositions,
-            colls => colls.Where(coll => !coll.isTrigger).Count() > squatRotateCheckPositions.Length / 2);
+            CheckCollisionCount(squatRotateCheckPositions) <= Math.Ceiling(squatRotateCheckPositions.Length / 2f);
+      }
+    }
+
+    private AutoCam cam_cache;
+    private AutoCam AutoCamera
+    {
+      get
+      {
+        if(cam_cache == null)
+          cam_cache = Camera.main.GetComponent<AutoCam>();
+        return cam_cache;
       }
     }
 
     /// <summary>
     /// 指定した位置にあるオブジェクト群が
-    /// 自身以外の各コライダーに対して条件を満たしている場合はtrueを返す
+    /// 自身以外の各コライダーに対して各点が1つでも条件を満たしている場合はtrueを返す
     /// </summary>
-    /// <param name="predicate">取得したコライダーの配列に対して行う真偽値判定</param>
-    private bool CheckCollisions(Transform[] positions, Func<IEnumerable<Collider>, bool> predicate)
+    /// <param name="predicate">各点取得したコライダーの配列に対して行う真偽値判定</param>
+    private bool CheckCollisionsAny(Transform[] positions, Func<IEnumerable<Collider>, bool> predicate)
     {
       List<Collider[]> collsList = new List<Collider[]>();
       foreach(var pos in positions)
@@ -175,6 +194,25 @@ namespace MBL.Charactor.Player
           return true;
       }
       return false;
+    }
+
+    /// <summary>
+    /// 各点が衝突しているコライダー(プレイヤー除く)の総数を返す
+    /// 同じコライダーに衝突している2点がある場合2つともカウントされる
+    /// </summary>
+    private int CheckCollisionCount(Transform[] positions)
+    {
+      List<Collider[]> collsList = new List<Collider[]>();
+      foreach(var pos in positions)
+        collsList.Add(Physics.OverlapSphere(pos.position, 0.01f));
+
+      int count = 0;
+      foreach(var colls in collsList)
+      {
+        var colls_player_delete = colls.Where(coll => coll.tag != "Player");
+        count += colls_player_delete.Count();
+      }
+      return count;
     }
 
     private void AllowInput()
@@ -266,16 +304,17 @@ namespace MBL.Charactor.Player
         dust_anim.SetBool("Dust", false);
 
       //Balloon
-      if(!takeBalloon && balloonInput)
-      {
-        anim.SetBool("TakeBalloonInput", true);
-        takeBalloon = true;
-        TakeBalloon();
-      }
-      else if(takeBalloon && balloonInput)
-      {
-        SetBalloon();
-      }
+      if(!squatInput && !isJumpping)
+        if(!takeBalloon && balloonInput)
+        {
+          anim.SetBool("TakeBalloonInput", true);
+          takeBalloon = true;
+          TakeBalloon();
+        }
+        else if(takeBalloon && balloonInput)
+        {
+          SetBalloon();
+        }
       if(!takeBalloon)
         anim.SetBool("TakeBalloonInput", false);
 
@@ -298,9 +337,13 @@ namespace MBL.Charactor.Player
     private IEnumerator JumpCoroutine()
     {
       isJumpping = true;
+
       Rigidbody.useGravity = false;
 
-      //ジャンプで速度が一定以下になる前に接地した場合trueになる
+      //カメラのY軸移動禁止
+      AutoCamera.SetAllowYAxisMove(false);
+
+      //ジャンプ中に壁などに接地した場合trueになる
       bool extraFlag = false;
 
       //ジャンプアニメーション開始
@@ -308,7 +351,7 @@ namespace MBL.Charactor.Player
         anim.SetTrigger("JumpInput");
 
       //上がる処理
-      Rigidbody.velocity = new Vector2(0, jumpSpeed);
+      Rigidbody.velocity = new Vector3(0, jumpSpeed, 0);
 
       //しばらく一定速度で上昇
       yield return new WaitForSeconds(jumpTimeUpDown);
@@ -338,6 +381,9 @@ namespace MBL.Charactor.Player
           Rigidbody.velocity -= Vector3.up * jumpTopSlowly * balloonJumpTopSlowly * Time.deltaTime;
         yield return new WaitForEndOfFrame();
       }
+
+      //カメラを戻す
+      AutoCamera.SetAllowYAxisMove(true);
 
       //ジャンプアニメーション終了処理
       if(!squatInput)
@@ -423,7 +469,7 @@ namespace MBL.Charactor.Player
     private void SetBalloon()
     {
       //風船をセットすべき場所を調べる(IBalloonEventを継承するスクリプトがついたコライダーオブジェクトが存在するか調べる)
-      var coll = Physics.OverlapSphere(setBalloonPos.position, 0.1f)
+      var coll = Physics.OverlapSphere(setBalloonPos.position, 0.01f)
         .Where(c => c.GetComponent<IBalloonEvent>() != null).FirstOrDefault();
 
       //もしセットすべき場所でない場合は風船を手放す
@@ -431,6 +477,7 @@ namespace MBL.Charactor.Player
       {
         //手放す
         takeBalloonObject.GetComponent<BalloonPositionControl>().SetFlow();
+        anim.SetBool("TakeBalloonInput", false);
       }
 
       //もしセット出来るならばIBalloonEventのメソッドを呼び出しアニメーションする
@@ -444,7 +491,8 @@ namespace MBL.Charactor.Player
 
         //アニメーション中の入力禁止
         DisallowInput();
-        Invoke("AllowInput", 1f);
+        Invoke("AllowInput", setBanTime);
+        anim.SetBool("WalkInput", false);
 
         //イベント呼び出し
         BalloonEvent.SetBalloonEvent(coll.GetComponent<IBalloonEvent>());
@@ -453,22 +501,22 @@ namespace MBL.Charactor.Player
       takeBalloon = false;
     }
 
-    public void OnGUI()
-    {
-      GUILayout.Label("Pos:" + transform.position);
-      GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
+    //public void OnGUI()
+    //{
+    //  GUILayout.Label("Pos:" + transform.position);
+    //  GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
 
-      GUILayout.Label("H:" + horizontalInput);
-      GUILayout.Label("V:" + verticalInput);
-      GUILayout.Label("Verocity:" + Rigidbody.velocity);
-      GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
+    //  GUILayout.Label("H:" + horizontalInput);
+    //  GUILayout.Label("V:" + verticalInput);
+    //  GUILayout.Label("Verocity:" + Rigidbody.velocity);
+    //  GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
 
-      GUILayout.Label("IsGrounded:" + IsGrounded);
-      GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
-      GUILayout.Label("Rotateble:" + Rotateble);
+    //  GUILayout.Label("IsGrounded:" + IsGrounded);
+    //  GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
+    //  GUILayout.Label("Rotateble:" + Rotateble);
 
-      GUILayout.Label("Jumpping:" + isJumpping);
-      GUILayout.Label("TakeBalloon:" + takeBalloon);
-    }
+    //  GUILayout.Label("Jumpping:" + isJumpping);
+    //  GUILayout.Label("TakeBalloon:" + takeBalloon);
+    //}
   }
 }

@@ -14,7 +14,7 @@ namespace MBL.Gimmick.Lift
     [SerializeField]
     private bool rotate = true;
     [SerializeField]
-    private float rotateSpeed = 0.3f;
+    private float rotateSpeed = 15f;
     [SerializeField]
     private bool rotateInverse = false;
 
@@ -30,9 +30,9 @@ namespace MBL.Gimmick.Lift
     private void Rotate()
     {
       if(!rotateInverse)
-        transform.Rotate(Vector3.up, rotateSpeed);
+        transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime);
       else
-        transform.Rotate(Vector3.up, -rotateSpeed);
+        transform.Rotate(Vector3.up, -rotateSpeed * Time.deltaTime);
     }
   }
 }
