@@ -469,7 +469,7 @@ namespace MBL.Charactor.Player
       takeBalloonObject = GameObject.Instantiate(balloonPrefab, balloonPos.position, Quaternion.identity) as GameObject;
 
       //balloonPosを風船に登録して手に持ってる間その位置にいくようにする
-      takeBalloonObject.GetComponent<BalloonPositionControl>().SetTraceTarget(balloonPos);
+      takeBalloonObject.GetComponent<BalloonControl>().SetTraceTarget(balloonPos);
     }
 
     /// <summary>
@@ -485,7 +485,7 @@ namespace MBL.Charactor.Player
       if(coll == null)
       {
         //手放す
-        takeBalloonObject.GetComponent<BalloonPositionControl>().SetFlow();
+        takeBalloonObject.GetComponent<BalloonControl>().SetFlow();
         anim.SetBool("TakeBalloonInput", false);
       }
 
@@ -493,7 +493,7 @@ namespace MBL.Charactor.Player
       else
       {
         //設置
-        takeBalloonObject.GetComponent<BalloonPositionControl>().SetTraceTarget(coll.transform);
+        takeBalloonObject.GetComponent<BalloonControl>().SetTraceTarget(coll.transform, true);
 
         //アニメーション
         anim.SetTrigger("SetBalloonInput");
