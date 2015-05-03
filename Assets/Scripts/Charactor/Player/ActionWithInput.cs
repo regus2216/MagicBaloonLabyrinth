@@ -56,7 +56,7 @@ namespace MBL.Charactor.Player
     private Transform balloonPos = null;
     [SerializeField, Tooltip("風船セットイベントを管理するスクリプトをもつオブジェクト")]
     private GameObject eventScript = null;
-    [SerializeField, Tooltip("風船を接地する位置を決めるオブジェクト")]
+    [SerializeField, Tooltip("風船を設置する位置を決めるオブジェクト")]
     private Transform setBalloonPos = null;
     [SerializeField, Tooltip("風船をギミックにセットする際に入力を禁止する時間")]
     private float setBanTime = 0.5f;
@@ -71,6 +71,9 @@ namespace MBL.Charactor.Player
     private int horizontalInput;
     private bool squatInput;
     private bool balloonInput;
+
+    //ジャンプ処理が終了しているかどうか
+    private bool jumpEndFlag = true;
 
     //現在手に持っているバルーン
     private GameObject takeBalloonObject;
@@ -330,14 +333,14 @@ namespace MBL.Charactor.Player
     private void Jump()
     {
       //ジャンプ処理
-      if(Input.GetButtonDown("Jump") && !isJumpping && IsGrounded && !isRotate)
+      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate)
         StartCoroutine_Auto(JumpCoroutine());
     }
 
     private IEnumerator JumpCoroutine()
     {
       isJumpping = true;
-
+      jumpEndFlag = false;
       Rigidbody.useGravity = false;
 
       //カメラのY軸移動禁止
@@ -362,6 +365,8 @@ namespace MBL.Charactor.Player
         if(IsGrounded && Rigidbody.velocity.y <= 0)
         {
           extraFlag = true;
+
+          isJumpping = false;
           break;
         }
 
@@ -395,6 +400,7 @@ namespace MBL.Charactor.Player
       if(extraFlag)
         yield return new WaitForSeconds(jumpBanTime);
       isJumpping = false;
+      jumpEndFlag = true;
     }
 
     private void Rotate()
@@ -428,7 +434,7 @@ namespace MBL.Charactor.Player
     /// </summary>
     private void FixedVelocity()
     {
-      if(!isJumpping && IsGrounded)
+      if(!isJumpping && IsGrounded && jumpEndFlag)
         Rigidbody.velocity = Vector3.down * jumpSpeed;
     }
 
@@ -446,10 +452,13 @@ namespace MBL.Charactor.Player
 
       //ジャンプ以外でただ落っこちる場合は重力を手動でかける
       if(!isJumpping && !IsGrounded)
+      {
+        Rigidbody.useGravity = false;
         if(!takeBalloon)
-          Rigidbody.velocity -= Vector3.up * jumpTopSlowly * Time.deltaTime;
+          Rigidbody.velocity += Vector3.up * Physics.gravity.y * Time.deltaTime;
         else
-          Rigidbody.velocity -= Vector3.up * jumpTopSlowly * balloonJumpTopSlowly * Time.deltaTime;
+          Rigidbody.velocity += Vector3.up * Physics.gravity.y * balloonJumpTopSlowly * Time.deltaTime;
+      }
     }
 
     /// <summary>
@@ -501,22 +510,22 @@ namespace MBL.Charactor.Player
       takeBalloon = false;
     }
 
-    //public void OnGUI()
-    //{
-    //  GUILayout.Label("Pos:" + transform.position);
-    //  GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
+    public void OnGUI()
+    {
+      GUILayout.Label("Pos:" + transform.position);
+      GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
 
-    //  GUILayout.Label("H:" + horizontalInput);
-    //  GUILayout.Label("V:" + verticalInput);
-    //  GUILayout.Label("Verocity:" + Rigidbody.velocity);
-    //  GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
+      GUILayout.Label("H:" + horizontalInput);
+      GUILayout.Label("V:" + verticalInput);
+      GUILayout.Label("Verocity:" + Rigidbody.velocity);
+      GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
 
-    //  GUILayout.Label("IsGrounded:" + IsGrounded);
-    //  GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
-    //  GUILayout.Label("Rotateble:" + Rotateble);
+      GUILayout.Label("IsGrounded:" + IsGrounded);
+      GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
+      GUILayout.Label("Rotateble:" + Rotateble);
 
-    //  GUILayout.Label("Jumpping:" + isJumpping);
-    //  GUILayout.Label("TakeBalloon:" + takeBalloon);
-    //}
+      GUILayout.Label("Jumpping:" + isJumpping);
+      GUILayout.Label("TakeBalloon:" + takeBalloon);
+    }
   }
 }
