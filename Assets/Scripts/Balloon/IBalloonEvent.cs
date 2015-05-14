@@ -12,6 +12,11 @@ namespace MBL.Balloon
   public interface IBalloonEvent
   {
     /// <summary>
+    /// 設置可能かどうかを調べる
+    /// </summary>
+    bool WhetherPossibleSet();
+
+    /// <summary>
     /// 風船取り付け時に発生するイベント
     /// </summary>
     void EventAction();

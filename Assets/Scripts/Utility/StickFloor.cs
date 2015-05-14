@@ -7,14 +7,16 @@ using UnityEngine;
 namespace MBL.Utility
 {
   /// <summary>
-  /// プレイヤーが乗った際にプレイヤーが吸い付くようにする
+  /// プレイヤーが乗った際にプレイヤーが横軸の移動に対して吸い付くようにする
   /// 動く床を表現する際に取り付ける
   /// </summary>
   public class StickFloor : MonoBehaviour
   {
+    [SerializeField, Tooltip("プレイヤーの足元")]
+    private Transform playerGroundCheck = null;
     private bool onPlayer = false;
 
-    private Transform PlayerTransform { get; set; }
+    private Transform playerTransform;
     private Vector3 previous;
 
     public void Update()
@@ -22,8 +24,12 @@ namespace MBL.Utility
       //プレイヤーの移動
       if(onPlayer)
       {
-        PlayerTransform.Translate(transform.position - previous, Space.World);
-        previous = transform.position;
+        //横にぶつかっただけでも少し移動するのを防ぐ
+        if(playerGroundCheck.position.y > transform.position.y)
+        {
+          playerTransform.Translate(transform.position - previous, Space.World);
+          previous = transform.position;
+        }
       }
     }
 
@@ -31,17 +37,11 @@ namespace MBL.Utility
     {
       if(collision.gameObject.tag == "Player")
       {
-        //プレイヤーの位置情報をキャッシュ
-        if(PlayerTransform == null)
-          PlayerTransform = collision.transform;
+        playerTransform = collision.gameObject.transform;
 
-        //横にぶつかっただけでも少し移動するのを防ぐ
-        if(PlayerTransform.position.y > transform.position.y)
-        {
-          //移動させるようにする
-          previous = transform.position;
-          onPlayer = true;
-        }
+        //移動させるようにする
+        previous = transform.position;
+        onPlayer = true;
       }
     }
 

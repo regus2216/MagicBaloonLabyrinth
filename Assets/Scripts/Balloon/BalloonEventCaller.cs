@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace MBL.Balloon
 {
-  public class BalloonEvent : MonoBehaviour
+  public class BalloonEventCaller : MonoBehaviour
   {
     public void SetBalloonEvent(IBalloonEvent balloonEvent)
     {

@@ -1,4 +1,5 @@
 ﻿using MBL.Balloon;
+using MBL.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,25 +11,33 @@ using UnityEngine;
 /// </summary>
 public class TestEvent : MonoBehaviour, IBalloonEvent
 {
+  [SerializeField]
+  private float speed = 3f;
+
   private bool eventStart = false;
-  private bool missing = false;
+
+  //1度しか取り付けられない
+  private bool possibleSet = true;
+
+  public bool WhetherPossibleSet()
+  {
+    return possibleSet;
+  }
 
   public void EventAction()
   {
     eventStart = true;
+    possibleSet = false;
   }
 
   public void MissingBalloon()
   {
     eventStart = false;
-    missing = true;
   }
 
   public void Update()
   {
     if(eventStart)
-      transform.Translate(Vector3.up * Time.deltaTime, Space.World);
-    if(missing)
-      transform.Translate(Vector3.down * Time.deltaTime, Space.World);
+      transform.Translate(speed * Vector3.up * Time.deltaTime, Space.World);
   }
 }

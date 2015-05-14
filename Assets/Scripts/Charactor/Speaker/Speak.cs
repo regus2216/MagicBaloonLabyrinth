@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MBL.Charactor.Player;
+using MBL.UI.Chat;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +13,33 @@ namespace MBL.Charactor.Speaker
   /// </summary>
   public class Speak : MonoBehaviour
   {
+    [SerializeField, Multiline]
+    private string text = string.Empty;
+    [SerializeField]
+    private ChatControl chatControl = null;
+    [SerializeField]
+    private ActionWithInput playerInput = null;
+    [SerializeField, Tooltip("このコンポーネントが付いているオブジェクトからの半径距離で会話出来るかを制御")]
+    private float radius = 2f;
+
+    public void Update()
+    {
+      //会話システム起動
+      //プレイヤーの位置とかで条件追加する
+      if(Input.GetButtonDown("Chat"))
+
+        //会話開始
+        if(!chatControl.IsChatting && !playerInput.IsJumpping && playerInput.IsGrounded)
+        {
+          if(Physics.OverlapSphere(transform.position, radius).FirstOrDefault(c => c.tag == "Player") != null)
+            chatControl.StartChat(text);
+        }
+
+        //会話ボタンの次の動作
+        else if(chatControl.IsChatting)
+        {
+          chatControl.ChatNext();
+        }
+    }
   }
 }

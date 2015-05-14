@@ -78,13 +78,13 @@ namespace MBL.Charactor.Player
     //現在手に持っているバルーン
     private GameObject takeBalloonObject;
 
-    private BalloonEvent bal_eve_cache;
-    private BalloonEvent BalloonEvent
+    private BalloonEventCaller bal_eve_cache;
+    private BalloonEventCaller BalloonEvent
     {
       get
       {
         if(bal_eve_cache == null)
-          bal_eve_cache = eventScript.GetComponent<BalloonEvent>();
+          bal_eve_cache = eventScript.GetComponent<BalloonEventCaller>();
         return bal_eve_cache;
       }
     }
@@ -218,13 +218,15 @@ namespace MBL.Charactor.Player
       return count;
     }
 
-    private void AllowInput()
+    public void AllowInput()
     {
       allowInput = true;
     }
 
-    private void DisallowInput()
+    public void DisallowInput()
     {
+      anim.Rebind();
+      dust_anim.SetBool("Dust", false);
       allowInput = false;
     }
 
@@ -434,8 +436,8 @@ namespace MBL.Charactor.Player
     /// </summary>
     private void FixedVelocity()
     {
-      if(!isJumpping && IsGrounded && jumpEndFlag)
-        Rigidbody.velocity = Vector3.down * jumpSpeed;
+      //if(!isJumpping && IsGrounded && jumpEndFlag)
+      //  Rigidbody.velocity = Vector3.down * jumpSpeed;
     }
 
     /// <summary>
@@ -481,6 +483,8 @@ namespace MBL.Charactor.Player
       var coll = Physics.OverlapSphere(setBalloonPos.position, 0.01f)
         .Where(c => c.GetComponent<IBalloonEvent>() != null).FirstOrDefault();
 
+      takeBalloon = false;
+
       //もしセットすべき場所でない場合は風船を手放す
       if(coll == null)
       {
@@ -492,6 +496,14 @@ namespace MBL.Charactor.Player
       //もしセット出来るならばIBalloonEventのメソッドを呼び出しアニメーションする
       else
       {
+        //設置場所が設置できないものと判断した場合、風船を手放して終了
+        if(!coll.GetComponent<IBalloonEvent>().WhetherPossibleSet())
+        {
+          takeBalloonObject.GetComponent<BalloonControl>().SetFlow();
+          anim.SetBool("TakeBalloonInput", false);
+          return;
+        }
+
         //設置
         takeBalloonObject.GetComponent<BalloonControl>().SetTraceTarget(coll.transform, true);
 
@@ -506,8 +518,6 @@ namespace MBL.Charactor.Player
         //イベント呼び出し
         BalloonEvent.SetBalloonEvent(coll.GetComponent<IBalloonEvent>());
       }
-
-      takeBalloon = false;
     }
 
     public void OnGUI()
