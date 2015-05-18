@@ -13,6 +13,8 @@ namespace MBL.Charactor.Speaker
   /// </summary>
   public class Speak : MonoBehaviour
   {
+    [SerializeField]
+    private string charactorName = null;
     [SerializeField, Multiline]
     private string text = string.Empty;
     [SerializeField]
@@ -32,7 +34,7 @@ namespace MBL.Charactor.Speaker
         if(!chatControl.IsChatting && !playerInput.IsJumpping && playerInput.IsGrounded)
         {
           if(Physics.OverlapSphere(transform.position, radius).FirstOrDefault(c => c.tag == "Player") != null)
-            chatControl.StartChat(text);
+            chatControl.StartChat(charactorName, text);
         }
 
         //会話ボタンの次の動作

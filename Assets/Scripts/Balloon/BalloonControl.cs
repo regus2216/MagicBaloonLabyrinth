@@ -12,6 +12,8 @@ namespace MBL.Balloon
     private float flowSpeed = 1f;
     [SerializeField, Tooltip("風船の生存時間")]
     private float lifeTime = 10f;
+    [SerializeField]
+    private Animator anim = null;
 
     private bool flow = false;
     private Transform traceTarget;
@@ -48,7 +50,7 @@ namespace MBL.Balloon
 
       //ターゲットの位置に既に別の風船が存在したらターゲットをロストして浮いていく
       if(Physics.OverlapSphere(traceTarget.position, 0.01f)
-        .FirstOrDefault(coll => coll.tag == "Balloon" && coll != GetComponent<Collider>()) != null)
+        .FirstOrDefault(coll => coll.tag == "Balloon" && target.tag != "BalloonPos" && coll != GetComponent<Collider>()) != null)
       {
         target = null;
         SetFlow();
@@ -62,7 +64,8 @@ namespace MBL.Balloon
     {
       if(traceTarget != null && traceTarget.GetComponent<IBalloonEvent>() != null)
         traceTarget.SendMessage("MissingBalloon");
-      Destroy(this.gameObject);
+      anim.SetTrigger("BalloonExprInput");
+      Destroy(this.gameObject, 1f);
     }
   }
 }

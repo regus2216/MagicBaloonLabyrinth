@@ -225,7 +225,7 @@ namespace MBL.Charactor.Player
 
     public void DisallowInput()
     {
-      anim.Rebind();
+      anim.SetBool("WalkInput", false);
       dust_anim.SetBool("Dust", false);
       allowInput = false;
     }
@@ -520,22 +520,22 @@ namespace MBL.Charactor.Player
       }
     }
 
-    public void OnGUI()
-    {
-      GUILayout.Label("Pos:" + transform.position);
-      GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
+    //public void OnGUI()
+    //{
+    //  GUILayout.Label("Pos:" + transform.position);
+    //  GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
 
-      GUILayout.Label("H:" + horizontalInput);
-      GUILayout.Label("V:" + verticalInput);
-      GUILayout.Label("Verocity:" + Rigidbody.velocity);
-      GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
+    //  GUILayout.Label("H:" + horizontalInput);
+    //  GUILayout.Label("V:" + verticalInput);
+    //  GUILayout.Label("Verocity:" + Rigidbody.velocity);
+    //  GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
 
-      GUILayout.Label("IsGrounded:" + IsGrounded);
-      GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
-      GUILayout.Label("Rotateble:" + Rotateble);
+    //  GUILayout.Label("IsGrounded:" + IsGrounded);
+    //  GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
+    //  GUILayout.Label("Rotateble:" + Rotateble);
 
-      GUILayout.Label("Jumpping:" + isJumpping);
-      GUILayout.Label("TakeBalloon:" + takeBalloon);
-    }
+    //  GUILayout.Label("Jumpping:" + isJumpping);
+    //  GUILayout.Label("TakeBalloon:" + takeBalloon);
+    //}
   }
 }

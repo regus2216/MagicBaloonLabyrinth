@@ -11,7 +11,7 @@ namespace MBL.Gimmick.Lift
   /// </summary>
   public class RotateRingLift : MonoBehaviour
   {
-    [SerializeField]
+    [SerializeField, Tooltip("回転させるかどうか")]
     private bool rotate = true;
     [SerializeField]
     private float rotateSpeed = 15f;
@@ -33,6 +33,16 @@ namespace MBL.Gimmick.Lift
         transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime);
       else
         transform.Rotate(Vector3.up, -rotateSpeed * Time.deltaTime);
+    }
+
+    public void OnBecameVisible()
+    {
+      rotate = true;
+    }
+
+    public void OnBecameInvisible()
+    {
+      rotate = false;
     }
   }
 }

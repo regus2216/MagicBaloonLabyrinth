@@ -10,14 +10,27 @@ namespace MBL.Utility
   /// プレイヤーが乗った際にプレイヤーが横軸の移動に対して吸い付くようにする
   /// 動く床を表現する際に取り付ける
   /// </summary>
+  [RequireComponent(typeof(Collider))]
   public class StickFloor : MonoBehaviour
   {
     [SerializeField, Tooltip("プレイヤーの足元")]
     private Transform playerGroundCheck = null;
+    [SerializeField, Tooltip("プレイヤーがオブジェクトからどのくらい上にいたら貼り付き効果を出すか")]
+    private float option = 0f;
     private bool onPlayer = false;
 
     private Transform playerTransform;
     private Vector3 previous;
+    private Collider _coll;
+    private Collider Coll
+    {
+      get
+      {
+        if(_coll == null)
+          _coll = GetComponent<Collider>();
+        return _coll;
+      }
+    }
 
     public void Update()
     {
@@ -25,7 +38,7 @@ namespace MBL.Utility
       if(onPlayer)
       {
         //横にぶつかっただけでも少し移動するのを防ぐ
-        if(playerGroundCheck.position.y > transform.position.y)
+        if(playerGroundCheck.position.y > transform.position.y + option)
         {
           playerTransform.Translate(transform.position - previous, Space.World);
           previous = transform.position;

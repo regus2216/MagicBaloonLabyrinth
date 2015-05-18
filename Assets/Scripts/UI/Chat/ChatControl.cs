@@ -16,6 +16,8 @@ namespace MBL.UI.Chat
     [SerializeField]
     private Text textField = null;
     [SerializeField]
+    private Text nameField = null;
+    [SerializeField]
     private GameObject renderCanvas = null;
     [SerializeField]
     private ActionWithInput playerInput = null;
@@ -39,13 +41,16 @@ namespace MBL.UI.Chat
     /// 送られてきた会話文を表示
     /// 空行区切りで表示を分割する
     /// </summary>
-    public void StartChat(string text)
+    public void StartChat(string name, string text)
     {
       //キャラの入力させなくする
       playerInput.DisallowInput();
       playerInput.enabled = false;
 
       renderCanvas.SetActive(true);
+
+      //名前の表示
+      nameField.text = name;
 
       //会話文の分割(空行で分割)
       this.text = text.Split(new string[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -92,10 +97,10 @@ namespace MBL.UI.Chat
     private IEnumerator ShowChat(string message)
     {
       textShowing = true;
-      for(int i = 0; i < message.Length; ++i)
+      for(int i = 0; i <= message.Length; ++i)
       {
         textField.text = message.Substring(0, i);
-        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForSeconds(0.05f);
       }
       textShowing = false;
     }
