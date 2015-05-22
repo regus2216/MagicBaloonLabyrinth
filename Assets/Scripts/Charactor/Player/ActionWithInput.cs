@@ -58,6 +58,8 @@ namespace MBL.Charactor.Player
     private GameObject eventScript = null;
     [SerializeField, Tooltip("風船を設置する位置を決めるオブジェクト")]
     private Transform setBalloonPos = null;
+    [SerializeField, Range(0, 3), Tooltip("風船を設置する際に調べる範囲の大きさ")]
+    private float setBalloonRadius = 0.3f;
     [SerializeField, Tooltip("風船をギミックにセットする際に入力を禁止する時間")]
     private float setBanTime = 0.5f;
 
@@ -119,7 +121,6 @@ namespace MBL.Charactor.Player
       get
       {
         return
-
           CheckCollisionsAny(groundCheckPositions,
           colls => colls.FirstOrDefault() != null);
       }
@@ -436,8 +437,8 @@ namespace MBL.Charactor.Player
     /// </summary>
     private void FixedVelocity()
     {
-      //if(!isJumpping && IsGrounded && jumpEndFlag)
-      //  Rigidbody.velocity = Vector3.down * jumpSpeed;
+      if(!isJumpping && IsGrounded && jumpEndFlag)
+        Rigidbody.velocity = Vector3.down * jumpSpeed;
     }
 
     /// <summary>
@@ -480,7 +481,7 @@ namespace MBL.Charactor.Player
     private void SetBalloon()
     {
       //風船をセットすべき場所を調べる(IBalloonEventを継承するスクリプトがついたコライダーオブジェクトが存在するか調べる)
-      var coll = Physics.OverlapSphere(setBalloonPos.position, 0.01f)
+      var coll = Physics.OverlapSphere(setBalloonPos.position, setBalloonRadius)
         .Where(c => c.GetComponent<IBalloonEvent>() != null).FirstOrDefault();
 
       takeBalloon = false;

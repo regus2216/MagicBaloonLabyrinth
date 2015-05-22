@@ -33,9 +33,7 @@ public class TestEvent : MonoBehaviour, IBalloonEvent
   public bool WhetherPossibleSet()
   {
     //取付可能かどうか
-    //return possibleSet;
-    //常に取付可能に設定する(デバッグ用)
-    return true;
+    return possibleSet;
   }
 
   public void EventAction()

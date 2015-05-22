@@ -28,7 +28,7 @@ namespace MBL.Charactor.Speaker
     {
       //会話システム起動
       //プレイヤーの位置とかで条件追加する
-      if(Input.GetButtonDown("Chat"))
+      if(Input.GetButtonDown("Action"))
 
         //会話開始
         if(!chatControl.IsChatting && !playerInput.IsJumpping && playerInput.IsGrounded)
