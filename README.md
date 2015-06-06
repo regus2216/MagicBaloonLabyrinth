@@ -1,9 +1,4 @@
 # MagicBaloonLabyrinth
-unity new project
 
+3D×2Dアクションゲーム
 
-
-aiueo
-
-
-l
