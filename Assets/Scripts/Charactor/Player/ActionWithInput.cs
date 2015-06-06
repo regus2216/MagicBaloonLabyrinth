@@ -1,4 +1,5 @@
 ﻿using MBL.Balloon;
+using MBL.UI.Chat;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -62,6 +63,14 @@ namespace MBL.Charactor.Player
     private float setBalloonRadius = 0.3f;
     [SerializeField, Tooltip("風船をギミックにセットする際に入力を禁止する時間")]
     private float setBanTime = 0.5f;
+    [SerializeField]
+    private ChatControl chatControl = null;
+    [SerializeField, Tooltip("このコンポーネントが付いているオブジェクトからの半径距離で会話出来るかを制御")]
+    private float chatRadius = 2f;
+    [SerializeField, Tooltip("持ち動作の位置")]
+    private Transform takePos = null;
+    [SerializeField, Tooltip("持ち動作の半径")]
+    private float takeRadius = 0.3f;
 
     private Vector3 mover = new Vector3();
     private bool isJumpping = false;
@@ -79,6 +88,9 @@ namespace MBL.Charactor.Player
 
     //現在手に持っているバルーン
     private GameObject takeBalloonObject;
+
+    //現在手に持っているオブジェクト
+    private TakeBase takeObject;
 
     private BalloonEventCaller bal_eve_cache;
     private BalloonEventCaller BalloonEvent
@@ -242,8 +254,62 @@ namespace MBL.Charactor.Player
         Rotate();
       }
 
+      ActionInput();
       FixedVelocity();
       FlyGravity();
+    }
+
+    private void ActionInput()
+    {
+      if(anim.GetBool("TakeBalloonInput"))
+        return;
+
+      if(Input.GetButtonDown("Action"))
+      {
+        #region 持ち動作
+
+        //何かを持っている状態なら、相応の処理
+        if(anim.GetBool("TakeInput") && takeObject)
+        {
+          print("投げ動作とか");
+          takeObject.Releace();
+          anim.SetBool("TakeInput", false);
+          return;
+        }
+
+        var take = Physics.OverlapSphere(takePos.position, takeRadius)
+          .FirstOrDefault(c => c.GetComponent<TakeBase>());
+
+        //持ちが可能なら持ち上げる
+        if(take)
+        {
+          print("持ち動作");
+          takeObject = take.GetComponent<TakeBase>();
+          takeObject.Taked();
+          anim.SetBool("TakeInput", true);
+          return;
+        }
+        #endregion 持ち動作
+
+        #region 会話処理
+
+        //会話中なら、次の会話
+        if(chatControl.IsChatting)
+        {
+          chatControl.ChatNext();
+          return;
+        }
+        var speaker = Physics.OverlapSphere(transform.position, chatRadius)
+          .FirstOrDefault(c => c.GetComponent<Speaker.Speak>());
+
+        //会話可能ならば会話する
+        if(speaker && !anim.GetBool("TakeInput"))
+        {
+          speaker.GetComponent<Speaker.Speak>().StartChat();
+          return;
+        }
+        #endregion 会話処理
+      }
     }
 
     private void Move()
@@ -287,7 +353,7 @@ namespace MBL.Charactor.Player
       }
 
       //風船入力処理
-      if(!isJumpping && !isSquatting)
+      if(!isJumpping && !isSquatting && !anim.GetBool("TakeInput"))
         balloonInput = Input.GetButtonDown("Balloon");
 
       //アニメーション処理
@@ -336,7 +402,7 @@ namespace MBL.Charactor.Player
     private void Jump()
     {
       //ジャンプ処理
-      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate)
+      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate && !anim.GetBool("TakeInput"))
         StartCoroutine_Auto(JumpCoroutine());
     }
 

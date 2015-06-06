@@ -19,29 +19,15 @@ namespace MBL.Charactor.Speaker
     private string text = string.Empty;
     [SerializeField]
     private ChatControl chatControl = null;
-    [SerializeField]
-    private ActionWithInput playerInput = null;
-    [SerializeField, Tooltip("このコンポーネントが付いているオブジェクトからの半径距離で会話出来るかを制御")]
-    private float radius = 2f;
 
-    public void Update()
+    public void StartChat()
     {
-      //会話システム起動
-      //プレイヤーの位置とかで条件追加する
-      if(Input.GetButtonDown("Action"))
+      chatControl.StartChat(charactorName, text);
+    }
 
-        //会話開始
-        if(!chatControl.IsChatting && !playerInput.IsJumpping && playerInput.IsGrounded)
-        {
-          if(Physics.OverlapSphere(transform.position, radius).FirstOrDefault(c => c.tag == "Player") != null)
-            chatControl.StartChat(charactorName, text);
-        }
-
-        //会話ボタンの次の動作
-        else if(chatControl.IsChatting)
-        {
-          chatControl.ChatNext();
-        }
+    public void ChatNext()
+    {
+      chatControl.ChatNext();
     }
   }
 }

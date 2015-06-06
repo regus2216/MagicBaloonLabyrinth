@@ -45,7 +45,8 @@ namespace MBL.UI.Chat
     {
       //キャラの入力させなくする
       playerInput.DisallowInput();
-      playerInput.enabled = false;
+
+      //playerInput.enabled = false;
 
       renderCanvas.SetActive(true);
 
@@ -89,7 +90,8 @@ namespace MBL.UI.Chat
     {
       //キャラの入力許可
       playerInput.AllowInput();
-      playerInput.enabled = true;
+
+      //playerInput.enabled = true;
 
       renderCanvas.SetActive(false);
     }
