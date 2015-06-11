@@ -1,26 +1,38 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-public class TakeBase : MonoBehaviour
+namespace MBL.Utility
 {
-  [SerializeField]
-  private Transform takedPos = null;
-
-  private bool isTaked;
-
-  public virtual void Taked()
+  public class TakeBase : MonoBehaviour
   {
-    isTaked = true;
-  }
+    [SerializeField, Tooltip("持ち上げたときの場所(プレイヤーの頭の上のオブジェクトを指定)")]
+    private Transform takedPos = null;
 
-  public virtual void Releace()
-  {
-    isTaked = false;
-  }
+    protected bool isTaked;
 
-  public void Update()
-  {
-    if(isTaked)
-      transform.position = takedPos.position;
+    /// <summary>
+    /// 持ち上げ時の動作
+    /// </summary>
+    public virtual void Taked()
+    {
+      isTaked = true;
+    }
+
+    /// <summary>
+    /// 手放すときの動作
+    /// </summary>
+    public virtual void Releace()
+    {
+      isTaked = false;
+    }
+
+    /// <summary>
+    ///isTakeがtrueのとき、takePosにオブジェクトをセットする
+    /// </summary>
+    public virtual void Update()
+    {
+      if(isTaked)
+        transform.position = takedPos.position;
+    }
   }
 }

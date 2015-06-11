@@ -1,5 +1,6 @@
 ﻿using MBL.Balloon;
 using MBL.UI.Chat;
+using MBL.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -66,11 +67,13 @@ namespace MBL.Charactor.Player
     [SerializeField]
     private ChatControl chatControl = null;
     [SerializeField, Tooltip("このコンポーネントが付いているオブジェクトからの半径距離で会話出来るかを制御")]
-    private float chatRadius = 2f;
+    private float chatRadius = 0.5f;
     [SerializeField, Tooltip("持ち動作の位置")]
     private Transform takePos = null;
     [SerializeField, Tooltip("持ち動作の半径")]
     private float takeRadius = 0.3f;
+
+    public Direction Direction { get; private set; }
 
     private Vector3 mover = new Vector3();
     private bool isJumpping = false;
@@ -268,10 +271,13 @@ namespace MBL.Charactor.Player
       {
         #region 持ち動作
 
-        //何かを持っている状態なら、相応の処理
+        //何も持っていない状態なら、TakeInputをfalseにする
+        if(!takeObject)
+          anim.SetBool("TakeInput", false);
+
+        //何かを持っている状態なら、リリース処理
         if(anim.GetBool("TakeInput") && takeObject)
         {
-          print("投げ動作とか");
           takeObject.Releace();
           anim.SetBool("TakeInput", false);
           return;
@@ -283,7 +289,6 @@ namespace MBL.Charactor.Player
         //持ちが可能なら持ち上げる
         if(take)
         {
-          print("持ち動作");
           takeObject = take.GetComponent<TakeBase>();
           takeObject.Taked();
           anim.SetBool("TakeInput", true);
@@ -299,13 +304,13 @@ namespace MBL.Charactor.Player
           chatControl.ChatNext();
           return;
         }
-        var speaker = Physics.OverlapSphere(transform.position, chatRadius)
+        var speaker = Physics.OverlapSphere(takePos.position, chatRadius)
           .FirstOrDefault(c => c.GetComponent<Speaker.Speak>());
 
         //会話可能ならば会話する
         if(speaker && !anim.GetBool("TakeInput"))
         {
-          speaker.GetComponent<Speaker.Speak>().StartChat();
+          speaker.GetComponent<Speaker.Speak>().StartChat(Direction);
           return;
         }
         #endregion 会話処理
@@ -328,6 +333,12 @@ namespace MBL.Charactor.Player
       verticalInput = (int)Input.GetAxisRaw("Vertical");
       mover.x = horizontalInput;
       mover.z = verticalInput;
+
+      //向きの更新
+      if(horizontalInput > 0)
+        Direction = Direction.Right;
+      if(horizontalInput < 0)
+        Direction = Direction.Left;
 
       if(!isRotate)
       {
@@ -589,20 +600,22 @@ namespace MBL.Charactor.Player
 
     //public void OnGUI()
     //{
-    //  GUILayout.Label("Pos:" + transform.position);
-    //  GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
+    //  GUILayout.Label("Pos : " + transform.position);
+    //  GUILayout.Label("Rot : " + transform.rotation.eulerAngles);
 
-    //  GUILayout.Label("H:" + horizontalInput);
-    //  GUILayout.Label("V:" + verticalInput);
-    //  GUILayout.Label("Verocity:" + Rigidbody.velocity);
-    //  GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
+    //  GUILayout.Label("H : " + horizontalInput);
+    //  GUILayout.Label("V : " + verticalInput);
+    //  GUILayout.Label("Verocity : " + Rigidbody.velocity);
+    //  GUILayout.Label("UseGravity : " + Rigidbody.useGravity);
 
-    //  GUILayout.Label("IsGrounded:" + IsGrounded);
-    //  GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
-    //  GUILayout.Label("Rotateble:" + Rotateble);
+    //  GUILayout.Label("IsGrounded : " + IsGrounded);
+    //  GUILayout.Label("ExistColliderOverhead : " + ExistColliderOverhead);
+    //  GUILayout.Label("Rotateble : " + Rotateble);
 
-    //  GUILayout.Label("Jumpping:" + isJumpping);
-    //  GUILayout.Label("TakeBalloon:" + takeBalloon);
+    //  GUILayout.Label("Jumpping : " + isJumpping);
+    //  GUILayout.Label("TakeBalloon : " + takeBalloon);
+
+    //GUILayout.Label("PlayerDir : " + Direction);
     //}
   }
 }

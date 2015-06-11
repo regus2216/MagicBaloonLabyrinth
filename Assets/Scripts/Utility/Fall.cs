@@ -15,10 +15,15 @@ namespace MBL.Utility
 
     private float acc = 0f;
 
+    public bool IsGround
+    {
+      get { return Physics.OverlapSphere(groundCheckPos.position, 0.01f).Any(c => c.tag == "Ground"); }
+    }
+
     public void Update()
     {
       //接地していない場合
-      if(!Physics.OverlapSphere(groundCheckPos.position, 0.01f).Any(c => c.tag == "Ground"))
+      if(!IsGround)
       {
         //重力加速度の追加
         acc += gravityScale * Time.deltaTime;
