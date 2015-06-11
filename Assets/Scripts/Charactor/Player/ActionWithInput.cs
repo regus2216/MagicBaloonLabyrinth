@@ -228,7 +228,7 @@ namespace MBL.Charactor.Player
       int count = 0;
       foreach(var colls in collsList)
       {
-        var colls_player_delete = colls.Where(coll => coll.tag != "Player");
+        var colls_player_delete = colls.Where(coll => coll.tag != "Player" && coll.isTrigger == false);
         count += colls_player_delete.Count();
       }
       return count;

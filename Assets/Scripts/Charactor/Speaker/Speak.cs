@@ -50,9 +50,9 @@ namespace MBL.Charactor.Speaker
       chatControl.ChatNext();
     }
 
-    public void OnGUI()
-    {
-      GUILayout.Label("SpeakerDir : " + dir);
-    }
+    //public void OnGUI()
+    //{
+    //  GUILayout.Label("SpeakerDir : " + dir);
+    //}
   }
 }
