@@ -16,7 +16,7 @@ namespace MBL.Charactor.Player
   [RequireComponent(typeof(Rigidbody), typeof(BoxCollider))]
   public class ActionWithInput : MonoBehaviour
   {
-    [SerializeField]
+    [SerializeField, Tooltip("Actionボタン以外の操作を禁止する")]
     private bool allowInput = true;
     [SerializeField, Range(1, 10)]
     private float moveSpeed = 1f;
@@ -94,6 +94,8 @@ namespace MBL.Charactor.Player
 
     //現在手に持っているオブジェクト
     private TakeBase takeObject;
+
+    public bool IsAllowInput { get { return allowInput; } }
 
     private BalloonEventCaller bal_eve_cache;
     private BalloonEventCaller BalloonEvent
@@ -413,7 +415,7 @@ namespace MBL.Charactor.Player
     private void Jump()
     {
       //ジャンプ処理
-      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate && !anim.GetBool("TakeInput"))
+      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate /*&& !anim.GetBool("TakeInput")*/)
         StartCoroutine_Auto(JumpCoroutine());
     }
 

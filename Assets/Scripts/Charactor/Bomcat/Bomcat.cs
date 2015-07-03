@@ -20,13 +20,20 @@ namespace MBL.Charactor.Bomcat
     private ActionWithInput playerScript;
     private bool @throw;
     private Vector3 dir;
+    private AnimatorStateInfo animInfo;
+
+    public void Awake()
+    {
+      playerScript = player.GetComponent<ActionWithInput>();
+    }
 
     public override void Taked()
     {
       base.Taked();
-      playerScript = player.GetComponent<ActionWithInput>();
       fallScript.enabled = false;
-      anim.SetTrigger("Explor");
+      animInfo = anim.GetCurrentAnimatorStateInfo(anim.GetLayerIndex("Base Layer"));
+      if(animInfo.shortNameHash != Animator.StringToHash("Explor"))
+        anim.SetTrigger("Explor");
     }
 
     public override void Releace()
@@ -57,6 +64,7 @@ namespace MBL.Charactor.Bomcat
       Explor explor = collision.gameObject.GetComponent<Explor>();
       if(@throw && explor)
       {
+        Destroy(GetComponent<Collider>());
         explor.DoExplor();
         anim.SetTrigger("ForceExplor");
       }

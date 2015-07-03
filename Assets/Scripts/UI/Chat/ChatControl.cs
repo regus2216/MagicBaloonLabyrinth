@@ -32,11 +32,6 @@ namespace MBL.UI.Chat
       get { return renderCanvas.activeInHierarchy; }
     }
 
-    public void Start()
-    {
-      renderCanvas.SetActive(false);
-    }
-
     /// <summary>
     /// 送られてきた会話文を表示
     /// 空行区切りで表示を分割する

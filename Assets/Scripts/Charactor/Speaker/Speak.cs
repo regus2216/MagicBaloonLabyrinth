@@ -50,6 +50,9 @@ namespace MBL.Charactor.Speaker
       chatControl.ChatNext();
     }
 
+    public string GetCharactorName { get { return charactorName; } }
+    public string GetText { get { return text; } }
+
     //public void OnGUI()
     //{
     //  GUILayout.Label("SpeakerDir : " + dir);

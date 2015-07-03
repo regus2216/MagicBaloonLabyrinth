@@ -10,5 +10,6 @@ namespace MBL.Charactor
   {
     Left,
     Right,
+    None,
   }
 }
