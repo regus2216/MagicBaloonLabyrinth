@@ -403,6 +403,7 @@ namespace MBL.Charactor.Player
       if(!takeBalloon)
         anim.SetBool("TakeBalloonInput", false);
 
+
       //反転処理
       var scale = transform.localScale;
       if(scale.x > 0 && horizontalInput > 0)

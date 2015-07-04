@@ -10,6 +10,9 @@ namespace MBL.Charactor.Kasabuta
   {
     [SerializeField, Tooltip("WindZoneControlスクリプト")]
     private WindZoneControl windCtrl = null;
+    [SerializeField]
+    private List<Animator> windAnim = null;
+
 
     /// <summary>
     /// 風を吹かせるフラグをONにする
@@ -17,6 +20,7 @@ namespace MBL.Charactor.Kasabuta
     public void StartBlowing()
     {
       windCtrl.Blowing = true;
+      windAnim.ForEach(anim => anim.SetTrigger("Wind"));
     }
 
     public void StopBlowing()
