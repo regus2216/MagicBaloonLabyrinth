@@ -21,10 +21,12 @@ namespace MBL.Charactor.Bomcat
     private bool @throw;
     private Vector3 dir;
     private AnimatorStateInfo animInfo;
+    private AudioSource audioSource;
 
     public void Awake()
     {
       playerScript = player.GetComponent<ActionWithInput>();
+      audioSource = GetComponent<AudioSource>();
     }
 
     public override void Taked()
@@ -62,6 +64,8 @@ namespace MBL.Charactor.Bomcat
     public void OnCollisionEnter(Collision collision)
     {
       Explor explor = collision.gameObject.GetComponent<Explor>();
+
+      //爆発
       if(@throw && explor)
       {
         Destroy(GetComponent<Collider>());

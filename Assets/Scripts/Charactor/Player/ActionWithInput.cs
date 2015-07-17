@@ -16,11 +16,9 @@ namespace MBL.Charactor.Player
   [RequireComponent(typeof(Rigidbody), typeof(BoxCollider))]
   public class ActionWithInput : MonoBehaviour
   {
-    [SerializeField, Tooltip("Actionボタン以外の操作を禁止する")]
     private bool allowInput = true;
     [SerializeField, Range(1, 10)]
-    private float moveSpeed = 1f;
-    [SerializeField, Range(0, 1), Tooltip("しゃがみ移動時のmoveSpeedの係数")]
+    private float moveSpeed = 5f;
     private float squatSpeedRate = 0.5f;
     [SerializeField, Tooltip("スプライトのアニメーションをコントロールするアニメーター")]
     private Animator anim = default(Animator);
@@ -34,24 +32,15 @@ namespace MBL.Charactor.Player
     private Transform[] rotateCheckPositions = null;
     [SerializeField, Tooltip("しゃがみ時回転可能判定オブジェクト")]
     private Transform[] squatRotateCheckPositions = null;
-    [SerializeField, Range(0, 100)]
     private float jumpSpeed = 10f;
-    [SerializeField, Range(0, 2), Tooltip("上昇時と下降時に速度を一定とする時間(頂点期は含まれない)")]
     private float jumpTimeUpDown = 0.2f;
-    [SerializeField, Range(0, 100), Tooltip("ジャンプ時に頂点付近で序々落としていく速度の大きさ")]
-    private float jumpTopSlowly = 30f;
-    [SerializeField, Range(0, 1), Tooltip("風船を持っている時のjumpTopSlowlyの係数")]
+    private float jumpTopSlowly = 50f;
     private float balloonJumpTopSlowly = 0.3f;
-    [SerializeField, Range(0, 1), Tooltip("壁めり込み判定ジャンプ等使用しようとした場合にバグ利用とみなしてジャンプを禁止する時間")]
-    private float jumpBanTime = 0.5f;
-    [SerializeField, Tooltip("立ち状態等でのコライダーのセンター座標")]
-    private Vector3 normalColliderCenter = default(Vector3);
-    [SerializeField, Tooltip("立ち状態でのコライダーのサイズ")]
-    private Vector3 normalColliderSize = default(Vector3);
-    [SerializeField, Tooltip("しゃがみ状態でのコライダーのセンター座標")]
-    private Vector3 squatColliderCenter = default(Vector3);
-    [SerializeField, Tooltip("しゃがみ状態でのコライダーのサイズ")]
-    private Vector3 squatColliderSize = default(Vector3);
+    private float jumpBanTime = 0.3f;
+    private Vector3 normalColliderCenter = new Vector3(-0.15f, 0, 0);
+    private Vector3 normalColliderSize = new Vector3(1, 1.8f, 0.4f);
+    private Vector3 squatColliderCenter = new Vector3(-0.15f, -0.3f, 0);
+    private Vector3 squatColliderSize = new Vector3(1f, 1.2f, 0.4f);
     [SerializeField, Tooltip("風船")]
     private GameObject balloonPrefab = null;
     [SerializeField, Tooltip("手に持っている時風船の位置を決めるオブジェクト")]
@@ -60,18 +49,18 @@ namespace MBL.Charactor.Player
     private GameObject eventScript = null;
     [SerializeField, Tooltip("風船を設置する位置を決めるオブジェクト")]
     private Transform setBalloonPos = null;
-    [SerializeField, Range(0, 3), Tooltip("風船を設置する際に調べる範囲の大きさ")]
     private float setBalloonRadius = 0.3f;
-    [SerializeField, Tooltip("風船をギミックにセットする際に入力を禁止する時間")]
     private float setBanTime = 0.5f;
     [SerializeField]
     private ChatControl chatControl = null;
-    [SerializeField, Tooltip("このコンポーネントが付いているオブジェクトからの半径距離で会話出来るかを制御")]
     private float chatRadius = 0.5f;
     [SerializeField, Tooltip("持ち動作の位置")]
     private Transform takePos = null;
-    [SerializeField, Tooltip("持ち動作の半径")]
     private float takeRadius = 0.3f;
+
+    private AudioSource audioSource = null;
+    [SerializeField]
+    private AudioClip jumpSpund = null;
 
     public Direction Direction { get; private set; }
 
@@ -158,7 +147,7 @@ namespace MBL.Charactor.Player
         return
 
           CheckCollisionsAny(headCheckPositions,
-          colls => colls.FirstOrDefault() != null);
+          colls => colls.FirstOrDefault(c=>!c.isTrigger) != null);
       }
     }
 
@@ -246,6 +235,11 @@ namespace MBL.Charactor.Player
       anim.SetBool("WalkInput", false);
       dust_anim.SetBool("Dust", false);
       allowInput = false;
+    }
+
+    public void Awake()
+    {
+      audioSource = GetComponent<AudioSource>();
     }
 
     public void Update()
@@ -403,7 +397,6 @@ namespace MBL.Charactor.Player
       if(!takeBalloon)
         anim.SetBool("TakeBalloonInput", false);
 
-
       //反転処理
       var scale = transform.localScale;
       if(scale.x > 0 && horizontalInput > 0)
@@ -425,6 +418,9 @@ namespace MBL.Charactor.Player
       isJumpping = true;
       jumpEndFlag = false;
       Rigidbody.useGravity = false;
+
+      //音
+      audioSource.PlayOneShot(jumpSpund);
 
       //カメラのY軸移動禁止
       AutoCamera.SetAllowYAxisMove(false);
@@ -570,7 +566,8 @@ namespace MBL.Charactor.Player
       if(coll == null)
       {
         //手放す
-        takeBalloonObject.GetComponent<BalloonControl>().SetFlow();
+        if(takeBalloonObject!=null)
+          takeBalloonObject.GetComponent<BalloonControl>().SetFlow();
         anim.SetBool("TakeBalloonInput", false);
       }
 
@@ -586,6 +583,9 @@ namespace MBL.Charactor.Player
         }
 
         //設置
+        if(takeBalloonObject == null)
+          return;
+
         takeBalloonObject.GetComponent<BalloonControl>().SetTraceTarget(coll.transform, true);
 
         //アニメーション

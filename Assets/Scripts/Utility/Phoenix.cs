@@ -25,7 +25,8 @@ namespace MBL.Utility
 
     public void Update()
     {
-      if(!instance)
+      //if(!instance)
+      if(instance == null)
       {
         instance = Instantiate(phoenixPref, transform.position, Quaternion.identity) as GameObject;
         instance.SetActive(true);

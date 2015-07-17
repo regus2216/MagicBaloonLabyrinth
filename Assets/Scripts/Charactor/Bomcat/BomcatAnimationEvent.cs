@@ -10,6 +10,17 @@ namespace MBL.Charactor.Bomcat
   {
     [SerializeField]
     private Bomcat bomcat = null;
+    private AudioSource audioSource;
+
+    public void Awake()
+    {
+      audioSource = GetComponent<AudioSource>();
+    }
+
+    public void SoundExplor()
+    {
+      audioSource.Play();
+    }
 
     private void Destroy()
     {
