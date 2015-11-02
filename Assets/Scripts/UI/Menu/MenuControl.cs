@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MBL.UI.Menu
@@ -22,6 +23,8 @@ namespace MBL.UI.Menu
     private GameObject renderCanvasObject = null;
     [SerializeField, Tooltip("プレイヤーの入力操作処理を行うスクリプト")]
     private ActionWithInput playerScript = null;
+    [SerializeField, Tooltip("メニューOPEN時の選択オブジェクト")]
+    private GameObject openSelectedItem = null;
 
     private Animator anim_cache;
     public Animator Anim
@@ -50,10 +53,11 @@ namespace MBL.UI.Menu
     public void Update()
     {
       //メニューボタンが押されたら
-      if(Input.GetButtonDown("Menu") && playerScript.IsGrounded && !playerScript.IsJumpping)
+      if(Input.GetButtonDown("Menu") && playerScript.IsGrounded && !playerScript.IsJumpping && playerScript.IsAllowInput)
       {
-        //MenuControlのついてないBehaviourオブジェクトを取得
-        allBehaviour = FindObjectsOfType<Behaviour>().Where(obj => obj.GetComponent<MenuControl>() == null);
+        //MenuControlとEventSystemのついてないBehaviourオブジェクトを取得
+        allBehaviour = FindObjectsOfType<Behaviour>()
+          .Where(obj => obj.GetComponent<MenuControl>() == null && obj.GetComponent<EventSystem>() == null);
         renderCanvasObject.SetActive(!renderCanvasObject.activeInHierarchy);
 
         //メニュー画面表示時の動作
@@ -84,6 +88,35 @@ namespace MBL.UI.Menu
           //playerRigidbody.angularVelocity = angular_velocity_cache;
         }
       }
+    }
+
+    public void OpenMenu()
+    {
+      allBehaviour = FindObjectsOfType<Behaviour>().Where(obj => obj.GetComponent<MenuControl>() == null);
+      renderCanvasObject.SetActive(true);
+
+      //メニュー画面表示時の動作
+      foreach(var obj in allBehaviour)
+        obj.enabled = false;
+
+      var e = FindObjectOfType<EventSystem>();
+      e.SetSelectedGameObject(openSelectedItem);
+
+      //アニメーション
+      Anim.SetTrigger("EnterMenu");
+    }
+
+    public void CloseMenu()
+    {
+      allBehaviour = FindObjectsOfType<Behaviour>()
+        .Where(obj => obj.GetComponent<MenuControl>() == null);
+      renderCanvasObject.SetActive(false);
+
+      foreach(var obj in allBehaviour)
+        obj.enabled = true;
+
+      //アニメーション
+      Anim.SetTrigger("LeaveMenu");
     }
   }
 }

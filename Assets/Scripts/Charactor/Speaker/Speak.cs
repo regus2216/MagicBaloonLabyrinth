@@ -19,29 +19,43 @@ namespace MBL.Charactor.Speaker
     private string text = string.Empty;
     [SerializeField]
     private ChatControl chatControl = null;
-    [SerializeField]
-    private ActionWithInput playerInput = null;
-    [SerializeField, Tooltip("このコンポーネントが付いているオブジェクトからの半径距離で会話出来るかを制御")]
-    private float radius = 2f;
+    [SerializeField, Tooltip("デフォルトで向いている方向を設定")]
+    private Direction dir;
 
-    public void Update()
+    public void StartChat(Direction playerDir)
     {
-      //会話システム起動
-      //プレイヤーの位置とかで条件追加する
-      if(Input.GetButtonDown("Action"))
-
-        //会話開始
-        if(!chatControl.IsChatting && !playerInput.IsJumpping && playerInput.IsGrounded)
+      if(playerDir == dir)
+      {
+        transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
+        switch(dir)
         {
-          if(Physics.OverlapSphere(transform.position, radius).FirstOrDefault(c => c.tag == "Player") != null)
-            chatControl.StartChat(charactorName, text);
-        }
+          case Direction.Left:
+            dir = Direction.Right;
+            break;
 
-        //会話ボタンの次の動作
-        else if(chatControl.IsChatting)
-        {
-          chatControl.ChatNext();
+          case Direction.Right:
+
+            dir = Direction.Left;
+            break;
+
+          default:
+            break;
         }
+      }
+      chatControl.StartChat(charactorName, text);
     }
+
+    public void ChatNext()
+    {
+      chatControl.ChatNext();
+    }
+
+    public string GetCharactorName { get { return charactorName; } }
+    public string GetText { get { return text; } }
+
+    //public void OnGUI()
+    //{
+    //  GUILayout.Label("SpeakerDir : " + dir);
+    //}
   }
 }

@@ -32,11 +32,6 @@ namespace MBL.UI.Chat
       get { return renderCanvas.activeInHierarchy; }
     }
 
-    public void Start()
-    {
-      renderCanvas.SetActive(false);
-    }
-
     /// <summary>
     /// 送られてきた会話文を表示
     /// 空行区切りで表示を分割する
@@ -45,7 +40,8 @@ namespace MBL.UI.Chat
     {
       //キャラの入力させなくする
       playerInput.DisallowInput();
-      playerInput.enabled = false;
+
+      //playerInput.enabled = false;
 
       renderCanvas.SetActive(true);
 
@@ -89,7 +85,8 @@ namespace MBL.UI.Chat
     {
       //キャラの入力許可
       playerInput.AllowInput();
-      playerInput.enabled = true;
+
+      //playerInput.enabled = true;
 
       renderCanvas.SetActive(false);
     }

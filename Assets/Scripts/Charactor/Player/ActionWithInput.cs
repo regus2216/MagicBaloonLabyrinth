@@ -1,4 +1,6 @@
 ﻿using MBL.Balloon;
+using MBL.UI.Chat;
+using MBL.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,11 +16,9 @@ namespace MBL.Charactor.Player
   [RequireComponent(typeof(Rigidbody), typeof(BoxCollider))]
   public class ActionWithInput : MonoBehaviour
   {
-    [SerializeField]
     private bool allowInput = true;
     [SerializeField, Range(1, 10)]
-    private float moveSpeed = 1f;
-    [SerializeField, Range(0, 1), Tooltip("しゃがみ移動時のmoveSpeedの係数")]
+    private float moveSpeed = 5f;
     private float squatSpeedRate = 0.5f;
     [SerializeField, Tooltip("スプライトのアニメーションをコントロールするアニメーター")]
     private Animator anim = default(Animator);
@@ -32,24 +32,15 @@ namespace MBL.Charactor.Player
     private Transform[] rotateCheckPositions = null;
     [SerializeField, Tooltip("しゃがみ時回転可能判定オブジェクト")]
     private Transform[] squatRotateCheckPositions = null;
-    [SerializeField, Range(0, 100)]
     private float jumpSpeed = 10f;
-    [SerializeField, Range(0, 2), Tooltip("上昇時と下降時に速度を一定とする時間(頂点期は含まれない)")]
     private float jumpTimeUpDown = 0.2f;
-    [SerializeField, Range(0, 100), Tooltip("ジャンプ時に頂点付近で序々落としていく速度の大きさ")]
-    private float jumpTopSlowly = 30f;
-    [SerializeField, Range(0, 1), Tooltip("風船を持っている時のjumpTopSlowlyの係数")]
+    private float jumpTopSlowly = 50f;
     private float balloonJumpTopSlowly = 0.3f;
-    [SerializeField, Range(0, 1), Tooltip("壁めり込み判定ジャンプ等使用しようとした場合にバグ利用とみなしてジャンプを禁止する時間")]
-    private float jumpBanTime = 0.5f;
-    [SerializeField, Tooltip("立ち状態等でのコライダーのセンター座標")]
-    private Vector3 normalColliderCenter = default(Vector3);
-    [SerializeField, Tooltip("立ち状態でのコライダーのサイズ")]
-    private Vector3 normalColliderSize = default(Vector3);
-    [SerializeField, Tooltip("しゃがみ状態でのコライダーのセンター座標")]
-    private Vector3 squatColliderCenter = default(Vector3);
-    [SerializeField, Tooltip("しゃがみ状態でのコライダーのサイズ")]
-    private Vector3 squatColliderSize = default(Vector3);
+    private float jumpBanTime = 0.3f;
+    private Vector3 normalColliderCenter = new Vector3(-0.15f, 0, 0);
+    private Vector3 normalColliderSize = new Vector3(1, 1.8f, 0.4f);
+    private Vector3 squatColliderCenter = new Vector3(-0.15f, -0.3f, 0);
+    private Vector3 squatColliderSize = new Vector3(1f, 1.2f, 0.4f);
     [SerializeField, Tooltip("風船")]
     private GameObject balloonPrefab = null;
     [SerializeField, Tooltip("手に持っている時風船の位置を決めるオブジェクト")]
@@ -58,10 +49,20 @@ namespace MBL.Charactor.Player
     private GameObject eventScript = null;
     [SerializeField, Tooltip("風船を設置する位置を決めるオブジェクト")]
     private Transform setBalloonPos = null;
-    [SerializeField, Range(0, 3), Tooltip("風船を設置する際に調べる範囲の大きさ")]
     private float setBalloonRadius = 0.3f;
-    [SerializeField, Tooltip("風船をギミックにセットする際に入力を禁止する時間")]
     private float setBanTime = 0.5f;
+    [SerializeField]
+    private ChatControl chatControl = null;
+    private float chatRadius = 0.5f;
+    [SerializeField, Tooltip("持ち動作の位置")]
+    private Transform takePos = null;
+    private float takeRadius = 0.3f;
+
+    private AudioSource audioSource = null;
+    [SerializeField]
+    private AudioClip jumpSpund = null;
+
+    public Direction Direction { get; private set; }
 
     private Vector3 mover = new Vector3();
     private bool isJumpping = false;
@@ -79,6 +80,11 @@ namespace MBL.Charactor.Player
 
     //現在手に持っているバルーン
     private GameObject takeBalloonObject;
+
+    //現在手に持っているオブジェクト
+    private TakeBase takeObject;
+
+    public bool IsAllowInput { get { return allowInput; } }
 
     private BalloonEventCaller bal_eve_cache;
     private BalloonEventCaller BalloonEvent
@@ -141,7 +147,7 @@ namespace MBL.Charactor.Player
         return
 
           CheckCollisionsAny(headCheckPositions,
-          colls => colls.FirstOrDefault() != null);
+          colls => colls.FirstOrDefault(c=>!c.isTrigger) != null);
       }
     }
 
@@ -213,7 +219,7 @@ namespace MBL.Charactor.Player
       int count = 0;
       foreach(var colls in collsList)
       {
-        var colls_player_delete = colls.Where(coll => coll.tag != "Player");
+        var colls_player_delete = colls.Where(coll => coll.tag != "Player" && coll.isTrigger == false);
         count += colls_player_delete.Count();
       }
       return count;
@@ -231,6 +237,11 @@ namespace MBL.Charactor.Player
       allowInput = false;
     }
 
+    public void Awake()
+    {
+      audioSource = GetComponent<AudioSource>();
+    }
+
     public void Update()
     {
       if(allowInput)
@@ -242,8 +253,64 @@ namespace MBL.Charactor.Player
         Rotate();
       }
 
+      ActionInput();
       FixedVelocity();
       FlyGravity();
+    }
+
+    private void ActionInput()
+    {
+      if(anim.GetBool("TakeBalloonInput"))
+        return;
+
+      if(Input.GetButtonDown("Action"))
+      {
+        #region 持ち動作
+
+        //何も持っていない状態なら、TakeInputをfalseにする
+        if(!takeObject)
+          anim.SetBool("TakeInput", false);
+
+        //何かを持っている状態なら、リリース処理
+        if(anim.GetBool("TakeInput") && takeObject)
+        {
+          takeObject.Releace();
+          anim.SetBool("TakeInput", false);
+          return;
+        }
+
+        var take = Physics.OverlapSphere(takePos.position, takeRadius)
+          .FirstOrDefault(c => c.GetComponent<TakeBase>());
+
+        //持ちが可能なら持ち上げる
+        if(take)
+        {
+          takeObject = take.GetComponent<TakeBase>();
+          takeObject.Taked();
+          anim.SetBool("TakeInput", true);
+          return;
+        }
+        #endregion 持ち動作
+
+        #region 会話処理
+
+        //会話中なら、次の会話
+        if(chatControl.IsChatting)
+        {
+          chatControl.ChatNext();
+          return;
+        }
+        var speaker = Physics.OverlapSphere(takePos.position, chatRadius)
+          .FirstOrDefault(c => c.GetComponent<Speaker.Speak>());
+
+        //会話可能ならば会話する
+        if(speaker && !anim.GetBool("TakeInput"))
+        {
+          speaker.GetComponent<Speaker.Speak>().StartChat(Direction);
+          return;
+        }
+        #endregion 会話処理
+      }
     }
 
     private void Move()
@@ -262,6 +329,12 @@ namespace MBL.Charactor.Player
       verticalInput = (int)Input.GetAxisRaw("Vertical");
       mover.x = horizontalInput;
       mover.z = verticalInput;
+
+      //向きの更新
+      if(horizontalInput > 0)
+        Direction = Direction.Right;
+      if(horizontalInput < 0)
+        Direction = Direction.Left;
 
       if(!isRotate)
       {
@@ -287,7 +360,7 @@ namespace MBL.Charactor.Player
       }
 
       //風船入力処理
-      if(!isJumpping && !isSquatting)
+      if(!isJumpping && !isSquatting && !anim.GetBool("TakeInput"))
         balloonInput = Input.GetButtonDown("Balloon");
 
       //アニメーション処理
@@ -336,7 +409,7 @@ namespace MBL.Charactor.Player
     private void Jump()
     {
       //ジャンプ処理
-      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate)
+      if(Input.GetButtonDown("Jump") && jumpEndFlag && !isJumpping && IsGrounded && !isRotate /*&& !anim.GetBool("TakeInput")*/)
         StartCoroutine_Auto(JumpCoroutine());
     }
 
@@ -345,6 +418,9 @@ namespace MBL.Charactor.Player
       isJumpping = true;
       jumpEndFlag = false;
       Rigidbody.useGravity = false;
+
+      //音
+      audioSource.PlayOneShot(jumpSpund);
 
       //カメラのY軸移動禁止
       AutoCamera.SetAllowYAxisMove(false);
@@ -490,7 +566,8 @@ namespace MBL.Charactor.Player
       if(coll == null)
       {
         //手放す
-        takeBalloonObject.GetComponent<BalloonControl>().SetFlow();
+        if(takeBalloonObject!=null)
+          takeBalloonObject.GetComponent<BalloonControl>().SetFlow();
         anim.SetBool("TakeBalloonInput", false);
       }
 
@@ -506,6 +583,9 @@ namespace MBL.Charactor.Player
         }
 
         //設置
+        if(takeBalloonObject == null)
+          return;
+
         takeBalloonObject.GetComponent<BalloonControl>().SetTraceTarget(coll.transform, true);
 
         //アニメーション
@@ -523,20 +603,22 @@ namespace MBL.Charactor.Player
 
     //public void OnGUI()
     //{
-    //  GUILayout.Label("Pos:" + transform.position);
-    //  GUILayout.Label("Rot:" + transform.rotation.eulerAngles);
+    //  GUILayout.Label("Pos : " + transform.position);
+    //  GUILayout.Label("Rot : " + transform.rotation.eulerAngles);
 
-    //  GUILayout.Label("H:" + horizontalInput);
-    //  GUILayout.Label("V:" + verticalInput);
-    //  GUILayout.Label("Verocity:" + Rigidbody.velocity);
-    //  GUILayout.Label("UseGravity:" + Rigidbody.useGravity);
+    //  GUILayout.Label("H : " + horizontalInput);
+    //  GUILayout.Label("V : " + verticalInput);
+    //  GUILayout.Label("Verocity : " + Rigidbody.velocity);
+    //  GUILayout.Label("UseGravity : " + Rigidbody.useGravity);
 
-    //  GUILayout.Label("IsGrounded:" + IsGrounded);
-    //  GUILayout.Label("ExistColliderOverhead:" + ExistColliderOverhead);
-    //  GUILayout.Label("Rotateble:" + Rotateble);
+    //  GUILayout.Label("IsGrounded : " + IsGrounded);
+    //  GUILayout.Label("ExistColliderOverhead : " + ExistColliderOverhead);
+    //  GUILayout.Label("Rotateble : " + Rotateble);
 
-    //  GUILayout.Label("Jumpping:" + isJumpping);
-    //  GUILayout.Label("TakeBalloon:" + takeBalloon);
+    //  GUILayout.Label("Jumpping : " + isJumpping);
+    //  GUILayout.Label("TakeBalloon : " + takeBalloon);
+
+    //GUILayout.Label("PlayerDir : " + Direction);
     //}
   }
 }
